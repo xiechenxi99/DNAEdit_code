@@ -4,10 +4,10 @@
   model_type: "SD3"
   sampler_type: "DNAEditSD3"
   T_steps: 40
-  n_avg: 1
+  T_start : 13
   src_guidance_scale: 1
-  tar_guidance_scale: 5.5
-  n_min: 0
-  n_max: 33
+  tar_guidance_scale: 3.5
+  mvg : 0.8
+  seed: 0
  
 

@@ -47,12 +47,11 @@ if __name__ == "__main__":
         exp_name = exp_dict["exp_name"]
         # model_type = exp_dict["model_type"]
         T_steps = exp_dict["T_steps"]
-        n_avg = exp_dict["n_avg"]
         src_guidance_scale = exp_dict["src_guidance_scale"]
         tar_guidance_scale = exp_dict["tar_guidance_scale"]
-        n_min = exp_dict["n_min"]
-        n_max = exp_dict["n_max"]
         seed = exp_dict["seed"]
+        T_start = exp_dict['T_start']
+        mvg = exp_dict['mvg']
 
         # set seed
         random.seed(seed)
@@ -60,7 +59,7 @@ if __name__ == "__main__":
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-        with open('PIE-bench/long_mapping_file.json','r',encoding='utf-8') as f:
+        with open('../PIE-bench/long_mapping_file.json','r',encoding='utf-8') as f:
             dataset_dict= json.load(f)
 
         for data_dict in dataset_dict.values():
@@ -71,7 +70,7 @@ if __name__ == "__main__":
                 print(tar_prompt)
                 negative_prompt =  "" # optionally add support for negative prompts (SD3)
                 image_src_path = data_dict["image_path"]
-                image_src_path = os.path.join("PIE-bench/annotation_images",image_src_path)
+                image_src_path = os.path.join("../PIE-bench/annotation_images",image_src_path)
                 # load image
                 image = Image.open(image_src_path)
                 # crop image to have both dimensions divisibe by 16 - avoids issues with resizing
@@ -102,12 +101,11 @@ if __name__ == "__main__":
                                                             tar_prompt,
                                                             negative_prompt,
                                                             T_steps,
-                                                            n_avg,
+                                                            
                                                             src_guidance_scale,
                                                             tar_guidance_scale,
-                                                            n_min,
-                                                            n_max,
-                                                            jmp=jmp)
+                                                            mvg=mvg
+                                                            T_start=T_start)
                     
                 elif model_type == 'FLUX':
                     x0_tar = DNAEdit_FLUX(pipe,
@@ -117,11 +115,11 @@ if __name__ == "__main__":
                                                             tar_prompt,
                                                             negative_prompt,
                                                             T_steps,
-                                                            n_avg,
+
                                                             src_guidance_scale,
                                                             tar_guidance_scale,
-                                                            n_min,
-                                                            n_max,)
+                                                            mvg=mvg
+                                                            T_start=T_start)
                 else:
                     raise NotImplementedError(f"Sampler type {model_type} not implemented")
 

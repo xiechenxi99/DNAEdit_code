@@ -115,14 +115,13 @@ def DNAEdit_SD3(pipe,
     src_prompt,
     tar_prompt,
     negative_prompt,
-    T_steps: int = 50,
-    n_avg: int = 1,
-    src_guidance_scale: float = 3.5,
-    tar_guidance_scale: float = 13.5,
-    n_min: int = 0,
-    n_max: int = 15,
-    jmp:int = 6,
-    ratio : float = 0.85):
+    T_steps: int = 40,
+
+    src_guidance_scale: float = 1,
+    tar_guidance_scale: float = 3.5,
+
+    T_start:int = 13,
+    mvg : float = 0.85):
     
     device = x_src.device
     orig_height, orig_width = x_src.shape[2], x_src.shape[3]
@@ -179,7 +178,7 @@ def DNAEdit_SD3(pipe,
     timesteps=torch.cat([timesteps,torch.tensor([0],device=timesteps.device)])
     inver_timesteps=torch.flip(timesteps,dims=[0])
 
-    jmp=jmp
+    jmp=T_start
     last = x_src.clone()
     last_lst=[]
     v_lst=[]
@@ -236,18 +235,6 @@ def DNAEdit_SD3(pipe,
             random_noise-=delta_v*(1-t_curr)
             random_noise=random_noise.to(delta_v.dtype)
         # print(random_noise.mean(),random_noise.var())
-        with torch.no_grad():
-            # ipdb.set_trace()
-            noise_pred_tgt = pipe.transformer(
-                hidden_states=torch.cat([last,last],dim=0),
-                timestep=(t_prev*1000).expand(src_latent_model_input.shape[0]),
-                encoder_hidden_states=tar_prompt_embeds,
-                pooled_projections=tar_pooled_prompt_embeds,
-                joint_attention_kwargs=None,
-                return_dict=False,
-            )[0]
-            tgt_noise_pred_uncond, tgt_noise_pred_text = noise_pred_tgt.chunk(2)
-            noise_pred_tgt = tgt_noise_pred_uncond + tar_guidance_scale * (tgt_noise_pred_text - tgt_noise_pred_uncond)
         
         last_lst.append(last)
         dx_lst.append(dx)
@@ -282,7 +269,7 @@ def DNAEdit_SD3(pipe,
         if pipe.do_classifier_free_guidance:
             tgt_noise_pred_uncond, tgt_noise_pred_text = noise_pred_tgt.chunk(2)
             noise_pred_tgt = tgt_noise_pred_uncond + tar_guidance_scale * (tgt_noise_pred_text - tgt_noise_pred_uncond)
-        x=ratio
+        x=mvg
         x_ref = x_ref.to(torch.float32)
         x_ref=x_ref+(t_prev-t_curr)*(noise_pred_tgt-v_lst[i-jmp])
         x_ref = x_ref.to(noise_pred_tgt.dtype)
@@ -296,4 +283,200 @@ def DNAEdit_SD3(pipe,
 
 
 
+@torch.no_grad()
+def DNAEdit_FLUX(pipe,
+    scheduler,
+    x_src,
+    src_prompt,
+    tar_prompt,
+    negative_prompt,
+    T_steps: int = 28,
 
+    src_guidance_scale: float = 1,
+    tar_guidance_scale: float = 2.5,
+    T_start : int=4,
+    mvg: float=0.85
+):
+
+    device = x_src.device
+    orig_height, orig_width = x_src.shape[2]*pipe.vae_scale_factor//2, x_src.shape[3]*pipe.vae_scale_factor//2
+    num_channels_latents = pipe.transformer.config.in_channels // 4
+
+    pipe.check_inputs(
+        prompt=src_prompt,
+        prompt_2=None,
+        height=orig_height,
+        width=orig_width,
+        callback_on_step_end_tensor_inputs=None,
+        max_sequence_length=512,
+    )
+
+    x_src, latent_src_image_ids = pipe.prepare_latents(batch_size= x_src.shape[0], num_channels_latents=num_channels_latents, height=orig_height, width=orig_width, dtype=x_src.dtype, device=x_src.device, generator=None,latents=x_src)
+    x_src_packed = pipe._pack_latents(x_src, x_src.shape[0], num_channels_latents, x_src.shape[2], x_src.shape[3])
+    latent_tar_image_ids = latent_src_image_ids
+
+    # 5. Prepare timesteps
+    sigmas = np.linspace(1.0, 1 / T_steps, T_steps)
+    image_seq_len = x_src_packed.shape[1]
+    mu = calculate_shift(
+        image_seq_len,
+        scheduler.config.base_image_seq_len,
+        scheduler.config.max_image_seq_len,
+        scheduler.config.base_shift,
+        scheduler.config.max_shift,
+    )
+    timesteps, T_steps = retrieve_timesteps(
+        scheduler,
+        T_steps,
+        device,
+        timesteps=None,
+        sigmas=sigmas,
+        mu=mu,
+        )
+    
+    num_warmup_steps = max(len(timesteps) - T_steps * pipe.scheduler.order, 0)
+    pipe._num_timesteps = len(timesteps)
+
+    
+    # src prompts
+    (
+        src_prompt_embeds,
+        src_pooled_prompt_embeds,
+        src_text_ids,
+
+    ) = pipe.encode_prompt(
+        prompt=src_prompt,
+        prompt_2=None,
+        device=device,
+    )
+
+    # tar prompts
+    pipe._guidance_scale = tar_guidance_scale
+    (
+        tar_prompt_embeds,
+        tar_pooled_prompt_embeds,
+        tar_text_ids,
+    ) = pipe.encode_prompt(
+        prompt=tar_prompt,
+        prompt_2=None,
+        device=device,
+    )
+
+    # handle guidance
+    if pipe.transformer.config.guidance_embeds:
+        src_guidance = torch.tensor([src_guidance_scale], device=device)
+        src_guidance = src_guidance.expand(x_src_packed.shape[0])
+        tar_guidance = torch.tensor([tar_guidance_scale], device=device)
+        tar_guidance = tar_guidance.expand(x_src_packed.shape[0])
+    else:
+        src_guidance = None
+        tar_guidance = None
+
+    # initialize our ODE Zt_edit_1=x_src
+
+    
+    timesteps=torch.cat([timesteps,torch.tensor([0],device=timesteps.device)])
+    inver_timesteps=torch.flip(timesteps,dims=[0])
+
+    jmp=T_start
+    last = x_src_packed.clone()
+    last_lst=[]
+    v_lst=[]
+    comp_lst=[]
+    random_noise=torch.randn_like(x_src_packed)
+    dx_lst=[]
+    for i,(t_curr,t_prev) in enumerate(zip(inver_timesteps[:-1],inver_timesteps[1:])):
+        # ipdb.set_trace()
+        if len(inver_timesteps)-1-i==jmp:
+            break
+        # scheduler._init_step_index(t)
+        # t_i = scheduler.sigmas[scheduler.step_index]
+        # if i < len(timesteps):
+        #     t_im1 = scheduler.sigmas[scheduler.step_index + 1]
+        # else:
+        #     t_im1 = t_i
+        t_curr,t_prev = t_curr/1000.0,t_prev/1000.0
+        x_curr = last
+        x_prev = (t_prev-t_curr)/(1-t_curr)*(random_noise-last)+last
+        k=1
+        dx = None
+        for i in range(k):
+            src_latent_model_input=x_prev
+            with torch.no_grad():
+                # print(src_latent_model_input.shape)
+                # print(latent_src_image_ids.shape)
+        # # predict the noise for the source prompt
+                noise_pred = pipe.transformer(
+                    hidden_states=src_latent_model_input,
+                    timestep=(t_prev).expand(src_latent_model_input.shape[0]),
+                    guidance=src_guidance,
+                    encoder_hidden_states=src_prompt_embeds,
+                    txt_ids=src_text_ids,
+                    img_ids=latent_src_image_ids,
+                    pooled_projections=src_pooled_prompt_embeds,
+                    joint_attention_kwargs=None,
+                    return_dict=False,
+                )[0]
+
+            noise_pred_src = noise_pred
+        
+            delta_v = ((x_prev-x_curr)/(t_prev-t_curr)-noise_pred_src)/k
+            l2_norm = torch.norm(delta_v, p=2)
+            
+            x_prev=x_prev.to(torch.float32)
+
+            last =x_prev-delta_v*(t_prev-t_curr)
+            dx=delta_v*(t_prev-t_curr)
+            last = last.to(delta_v.dtype)
+            x_prev = last.clone()
+
+            random_noise=random_noise.to(torch.float32)
+            random_noise-=delta_v*(1-t_curr)
+            random_noise=random_noise.to(delta_v.dtype)
+        
+        last_lst.append(last)
+        dx_lst.append(dx)
+        v_lst.append(noise_pred_src)
+    last_lst=last_lst[::-1]
+    v_lst = v_lst[::-1]
+    dx_lst = dx_lst[::-1]
+    random_noise=last_lst[0]
+    x_ref=x_src_packed.clone()
+
+
+    for i,(t_curr,t_prev) in enumerate(zip(timesteps[:-1],timesteps[1:])):
+        if i<jmp:
+            continue
+
+        # ipdb.set_trace()
+        t_curr,t_prev = t_curr/1000.0,t_prev/1000.0
+        tgt_latent_model_input=random_noise+dx_lst[i-jmp]
+        with torch.no_grad():
+            
+            noise_pred_tgt=pipe.transformer(
+                    hidden_states=tgt_latent_model_input,
+                    timestep=(t_curr).expand(tgt_latent_model_input.shape[0]),
+                    guidance=tar_guidance,
+                    encoder_hidden_states=tar_prompt_embeds,
+                    txt_ids=tar_text_ids,
+                    img_ids=latent_src_image_ids,
+                    pooled_projections=tar_pooled_prompt_embeds,
+                    joint_attention_kwargs=None,
+                    return_dict=False,
+                )[0]
+
+        noise_pred_tgt = noise_pred_tgt
+        x=mvg
+        x_ref = x_ref.to(torch.float32)
+
+        x_ref=x_ref+(t_prev-t_curr)*(noise_pred_tgt-v_lst[i-jmp])
+        x_ref = x_ref.to(noise_pred_tgt.dtype)
+        v = noise_pred_tgt*x+(random_noise-x_ref)/t_curr*(1-x)
+        # v = noise_pred_tgt
+        random_noise=random_noise.to(torch.float32)
+        # random_noise = scheduler.step(noise_pred_tgt, timestep, random_noise, return_dict=False)[0]
+        random_noise+=v*(t_prev-t_curr)
+        random_noise=random_noise.to(v.dtype)
+    unpacked_out = pipe._unpack_latents(random_noise, orig_height, orig_width, pipe.vae_scale_factor)
+    
+    return unpacked_out

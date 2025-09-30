@@ -16,21 +16,35 @@ Lei zhang<sup>1,2</sup>
 🚩 Accepted by NeurIPS 2025 (Spotlight🌟)
 
 <a href='https://arxiv.org/pdf/2506.01430'><img src='https://img.shields.io/badge/Paper-Arxiv-red'></a>
+<a href='https://xiechenxi99.github.io/DNAEdit/'><img src='https://img.shields.io/badge/Project-Page-blue'></a>
 
 </div>
 
 
 
+## DNAEdit
+### 1️⃣ Install
 
-## 1️⃣Enviroment
+1. Environment: torch=2.3.1 diffusers==0.30.1
+2. Download the checkpoint [SD-3.5-meidum](https://huggingface.co/stabilityai/stable-diffusion-3.5-medium) or [FLUX.1 Dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) on Huggingface
 
-torch=2.3.1 diffusers==0.34.0
-## 2️⃣Inference on PIE-Bench
+
+### 2️⃣ Inference on PIE-Bench
 1. Modify the path of PIE-Bench and your Diffusion models checkpoints in scripts/run_script_dnaedit.py
 2. run: 
-```
-python scripts/run_script_dnaedit.py --device_number 0 --exp_yaml configs/DNAEdit_SD3_exp.yaml --save ./output
-```
+    running on SD3.5-medium
+    ```
+    python scripts/run_script_dnaedit.py --device_number 0 --exp_yaml configs/DNAEdit_SD3_exp.yaml --save ./output
+    ```
+    or running on FLUX.1 Dev
+
+    ```
+    python scripts/run_script_dnaedit.py --device_number 0 --exp_yaml configs/DNAEdit_FLUX_exp.yaml --save ./output
+    ```
+### 3️⃣ Inference on single image
+**TODO**
+
+## DNA-Bench
 
 
 
