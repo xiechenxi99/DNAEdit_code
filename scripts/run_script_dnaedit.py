@@ -63,81 +63,81 @@ if __name__ == "__main__":
             dataset_dict= json.load(f)
 
         for data_dict in dataset_dict.values():
-            for jmp in [13]:
-                src_prompt = data_dict["original_prompt"]
-                tar_prompt = data_dict["editing_prompt"]
-                print(src_prompt)
-                print(tar_prompt)
-                negative_prompt =  "" # optionally add support for negative prompts (SD3)
-                image_src_path = data_dict["image_path"]
-                image_src_path = os.path.join("../PIE-bench/annotation_images",image_src_path)
-                # load image
-                image = Image.open(image_src_path)
-                # crop image to have both dimensions divisibe by 16 - avoids issues with resizing
-                image = image.crop((0, 0, image.width - image.width % 16, image.height - image.height % 16))
-                original_width, original_height = image.size
-                image_relative=data_dict["image_path"]
-                # if os.path.exists(f"outputs/{args.save}/{image_relative}"):
-                #     print("exist")
-                #     continue
-                image = image.resize((original_width,original_height),Image.BILINEAR)
-                image_src = pipe.image_processor.preprocess(image)
-                # cast image to half precision
-                image_src = image_src.to(device).half()
-                with torch.autocast("cuda"), torch.inference_mode():
-                    x0_src_denorm = pipe.vae.encode(image_src).latent_dist.mode()
-                x0_src = (x0_src_denorm - pipe.vae.config.shift_factor) * pipe.vae.config.scaling_factor
-                # send to cuda
-                x0_src = x0_src.to(device)
-                start_time = time.time()
+            
+            src_prompt = data_dict["original_prompt"]
+            tar_prompt = data_dict["editing_prompt"]
+            print(src_prompt)
+            print(tar_prompt)
+            negative_prompt =  "" # optionally add support for negative prompts (SD3)
+            image_src_path = data_dict["image_path"]
+            image_src_path = os.path.join("../PIE-bench/annotation_images",image_src_path)
+            # load image
+            image = Image.open(image_src_path)
+            # crop image to have both dimensions divisibe by 16 - avoids issues with resizing
+            image = image.crop((0, 0, image.width - image.width % 16, image.height - image.height % 16))
+            original_width, original_height = image.size
+            image_relative=data_dict["image_path"]
+            # if os.path.exists(f"outputs/{args.save}/{image_relative}"):
+            #     print("exist")
+            #     continue
+            image = image.resize((original_width,original_height),Image.BILINEAR)
+            image_src = pipe.image_processor.preprocess(image)
+            # cast image to half precision
+            image_src = image_src.to(device).half()
+            with torch.autocast("cuda"), torch.inference_mode():
+                x0_src_denorm = pipe.vae.encode(image_src).latent_dist.mode()
+            x0_src = (x0_src_denorm - pipe.vae.config.shift_factor) * pipe.vae.config.scaling_factor
+            # send to cuda
+            x0_src = x0_src.to(device)
+            start_time = time.time()
 
 
 
-                if model_type == 'SD3':
-                    x0_tar = DNAEdit_SD3(pipe,
-                                                            scheduler,
-                                                            x0_src,
-                                                            src_prompt,
-                                                            tar_prompt,
-                                                            negative_prompt,
-                                                            T_steps,
-                                                            
-                                                            src_guidance_scale,
-                                                            tar_guidance_scale,
-                                                            mvg=mvg
-                                                            T_start=T_start)
-                    
-                elif model_type == 'FLUX':
-                    x0_tar = DNAEdit_FLUX(pipe,
-                                                            scheduler,
-                                                            x0_src,
-                                                            src_prompt,
-                                                            tar_prompt,
-                                                            negative_prompt,
-                                                            T_steps,
-
-                                                            src_guidance_scale,
-                                                            tar_guidance_scale,
-                                                            mvg=mvg
-                                                            T_start=T_start)
-                else:
-                    raise NotImplementedError(f"Sampler type {model_type} not implemented")
-
-                end_time = time.time()
-
-                print(f"函数执行耗时: {end_time - start_time:.6f} 秒")
-                x0_tar_denorm = (x0_tar / pipe.vae.config.scaling_factor) + pipe.vae.config.shift_factor
-                with torch.autocast("cuda"), torch.inference_mode():
-                    image_tar = pipe.vae.decode(x0_tar_denorm, return_dict=False)[0]
-                image_tar = pipe.image_processor.postprocess(image_tar)
+            if model_type == 'SD3':
+                x0_tar = DNAEdit_SD3(pipe,
+                                                        scheduler,
+                                                        x0_src,
+                                                        src_prompt,
+                                                        tar_prompt,
+                                                        negative_prompt,
+                                                        T_steps,
+                                                        
+                                                        src_guidance_scale,
+                                                        tar_guidance_scale,
+                                                        mvg=mvg,
+                                                        T_start=T_start)
                 
-                # make sure to create the directories before saving
-                save_dir = f"outputs/{args.save}/"
-                save_dir = os.path.join(save_dir,"/".join(data_dict["image_path"].split('/')[:-1]))
-                os.makedirs(save_dir, exist_ok=True)
-                image_tar = image_tar[0].resize((original_width,original_height),Image.BILINEAR)
-                image_tar.save(f"{save_dir}/{data_dict['image_path'].split('/')[-1]}")
-                
+            elif model_type == 'FLUX':
+                x0_tar = DNAEdit_FLUX(pipe,
+                                                        scheduler,
+                                                        x0_src,
+                                                        src_prompt,
+                                                        tar_prompt,
+                                                        negative_prompt,
+                                                        T_steps,
+
+                                                        src_guidance_scale,
+                                                        tar_guidance_scale,
+                                                        mvg=mvg,
+                                                        T_start=T_start)
+            else:
+                raise NotImplementedError(f"Sampler type {model_type} not implemented")
+
+            end_time = time.time()
+
+            print(f"函数执行耗时: {end_time - start_time:.6f} 秒")
+            x0_tar_denorm = (x0_tar / pipe.vae.config.scaling_factor) + pipe.vae.config.shift_factor
+            with torch.autocast("cuda"), torch.inference_mode():
+                image_tar = pipe.vae.decode(x0_tar_denorm, return_dict=False)[0]
+            image_tar = pipe.image_processor.postprocess(image_tar)
+            
+            # make sure to create the directories before saving
+            save_dir = f"outputs/{args.save}/"
+            save_dir = os.path.join(save_dir,"/".join(data_dict["image_path"].split('/')[:-1]))
+            os.makedirs(save_dir, exist_ok=True)
+            image_tar = image_tar[0].resize((original_width,original_height),Image.BILINEAR)
+            image_tar.save(f"{save_dir}/{data_dict['image_path'].split('/')[-1]}")
+            
 
 
 
