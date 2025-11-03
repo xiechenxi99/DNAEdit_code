@@ -42,13 +42,15 @@ Lei zhang<sup>1,2</sup>
 
 ![Bus🚌->Train🚄](fig/0001.gif)
 ![Bear🐻->Panda🐼](fig/0009.gif)
+![Swan🦢->Flamingo🦩](fig/0009.gif)
+![Elephant🐘->Rhinoceros🦏](fig/0009.gif)
 
 
 *Edting samples are from [Five-Bench](https://sites.google.com/view/five-benchmark?pli=1)*
 # ⏰ TODO
 
 - [x] Add gradio demo.
-- [x] Add Video Editing on Wan 2.1
+- [] Add Video Editing on Wan 2.1
 
 
 ## DNAEdit
