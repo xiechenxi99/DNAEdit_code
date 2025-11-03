@@ -39,13 +39,10 @@ Lei zhang<sup>1,2</sup>
 
 ### Video Editing results
 
-[![Bus🚌->Train🚄]](https://xiechenxi99.github.io/DNAEdit/static/videos/0046.mp4)
-
 
 ![Bus🚌->Train🚄](fig/0001.gif)
-<video controls src="fig/0009.gif" title="Title"></video> Bear🐻->Panda🐼
- <video controls src="fig/0046.mp4" title="Title"></video> Swan🦢->Flamingo🦩
-  <video controls src="fig/0062.mp4" title="Title"></video> Elephant🐘->Rhinoceros🦏
+![Bear🐻->Panda🐼](fig/0009.gif)
+
 
 *Edting samples are from [Five-Bench](https://sites.google.com/view/five-benchmark?pli=1)*
 # ⏰ TODO
