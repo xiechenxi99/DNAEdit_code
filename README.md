@@ -1,6 +1,6 @@
 
 <div align="center">
-<h2>Direct Noise Alignment for Text-Guided Rectified Flow Editing</h2>
+<h2>DNAEdit: Direct Noise Alignment for Text-Guided Rectified Flow Editing</h2>
 
 
 
@@ -18,12 +18,37 @@ Lei zhang<sup>1,2</sup>
 <a href='https://arxiv.org/pdf/2506.01430'><img src='https://img.shields.io/badge/Paper-Arxiv-red'></a>
 <a href='https://xiechenxi99.github.io/DNAEdit/'><img src='https://img.shields.io/badge/Project-Page-blue'></a>
 
+![alt text](fig/tissue.png)
+
+
+
 </div>
 
+# 📖Abstract
+![alt text](fig/fig1.png)
+**1. Reduces Inversion Error Accumulation**: Unlike conventional diffusion/RF inversion (which approximates later noisy latents with current ones), **DNA optimizes Gaussian noise directly in the noise domain**. It adjusts noise via velocity field differences, leveraging RF’s noise-clean image interpolation property to fundamentally reduce errors.
+
+**2. Balances Editing & Background Preservation**: The supporting MVG module controls text-guided generation, ensuring target editability while maximizing original background retention.
+
+**3. Introduces DNA-Bench**: A long-prompt benchmark addressing simple-prompt limitations in existing tests, enabling comprehensive evaluation of advanced editing models.
+
+
+# 📖Experiment
+### Visual comparison on PIE-Bench
+![alt text](fig/fig2.png)
+
+### Video Editing results
+
+<video controls src="fig/0001.mp4" title="Title"></video> Bus🚌->Train🚄
+<video controls src="fig/0009.mp4" title="Title"></video> Bear🐻->Panda🐼
+ <video controls src="fig/0046.mp4" title="Title"></video> Swan🦢->Flamingo🦩
+  <video controls src="fig/0062.mp4" title="Title"></video> Elephant🐘->Rhinoceros🦏
+
+*Edting samples are from [Five-Bench](https://sites.google.com/view/five-benchmark?pli=1)*
 # ⏰ TODO
 
 - [x] Add gradio demo.
-- [] Add Video Editing on Wan 2.1
+- [x] Add Video Editing on Wan 2.1
 
 
 ## DNAEdit
@@ -33,7 +58,7 @@ Lei zhang<sup>1,2</sup>
 2. Download the checkpoint [SD-3.5-meidum](https://huggingface.co/stabilityai/stable-diffusion-3.5-medium) or [FLUX.1 Dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) on Huggingface
 
 
-### 2️⃣ Inference on PIE-Bench
+### 2️⃣ Inference on PIE-Bench （DNA-Bench）
 1. Modify the path of PIE-Bench and your Diffusion models checkpoints in scripts/run_script_dnaedit.py
 2. run: 
     running on SD3.5-medium
@@ -45,6 +70,7 @@ Lei zhang<sup>1,2</sup>
     ```
     python scripts/run_script_dnaedit.py --device_number 0 --exp_yaml configs/DNAEdit_FLUX_exp.yaml --save ./output
     ```
+3. If you want to inference on **DNA-Bench**, you can simply modify the json path as 'DNA-Bench/long_mapping_file.json' .
 ### 3️⃣ Inference on Your Image
 #### Quick Start
 1. **Configure Model Path**
