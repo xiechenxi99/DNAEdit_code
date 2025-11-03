@@ -38,8 +38,9 @@ Lei zhang<sup>1,2</sup>
 ![alt text](fig/fig2.png)
 
 ### Video Editing results
-
-[Bus🚌->Train🚄](https://xiechenxi99.github.io/DNAEdit/static/videos/0046.mp4)
+`
+[![Bus🚌->Train🚄](https://xiechenxi99.github.io/DNAEdit/static/videos/0046.mp4)
+`
 
  <video controls src="fig/0001.mp4" title="Title"></video> Bus🚌->Train🚄
 <video controls src="fig/0009.mp4" title="Title"></video> Bear🐻->Panda🐼
