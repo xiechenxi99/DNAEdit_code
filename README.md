@@ -39,8 +39,8 @@ Lei zhang<sup>1,2</sup>
 
 ### Video Editing results
 
-<video controls src="fig/0001.mp4" title="Title"></video> Bus🚌->Train🚄
-<video controls src="fig/0009.mp4" title="Title"></video> Bear🐻->Panda🐼
+<video controls src="fig/0001.gif" title="Title"></video> Bus🚌->Train🚄
+<video controls src="fig/0009.gif" title="Title"></video> Bear🐻->Panda🐼
  <video controls src="fig/0046.mp4" title="Title"></video> Swan🦢->Flamingo🦩
   <video controls src="fig/0062.mp4" title="Title"></video> Elephant🐘->Rhinoceros🦏
 
