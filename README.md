@@ -18,7 +18,7 @@ Lei zhang<sup>1,2</sup>
 <a href='https://arxiv.org/pdf/2506.01430'><img src='https://img.shields.io/badge/Paper-Arxiv-red'></a>
 <a href='https://xiechenxi99.github.io/DNAEdit/'><img src='https://img.shields.io/badge/Project-Page-blue'></a>
 
-![alt text](fig/teaser.png)
+
 
 
 
