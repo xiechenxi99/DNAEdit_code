@@ -50,7 +50,7 @@ Lei zhang<sup>1,2</sup>
 # ⏰ TODO
 
 - [x] Add gradio demo.
-- [] Add Video Editing on Wan 2.1
+- [x] Add Video Editing on Wan 2.1
 
 
 ## DNAEdit
